@@ -136,9 +136,9 @@ public class LinkController {
     return new RedirectView(url);
   }
 
-  @PostMapping("/{url:.+}")
+  @PostMapping("/")
   @ResponseBody
-  public String getCodeByUrl(@PathVariable("url") String url) {
+  public String getCodeByUrl(String url) {
     BoundValueOperations<String, String> index = template.boundValueOps("c_index");
     index.setIfAbsent(0 + "");
     Long c_index = index.increment(1l);
