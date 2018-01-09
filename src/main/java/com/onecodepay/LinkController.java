@@ -2,11 +2,16 @@ package com.onecodepay;
 
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.BoundValueOperations;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.view.RedirectView;
 
 /**
@@ -104,7 +109,7 @@ public class LinkController {
   private String getCode(long id) {
     StringBuffer result = new StringBuffer();
     while (id > 0) {
-      result.append(INT_MAPPING.get(id % LENGTH));
+      result.append(INT_MAPPING.get((int) (id % LENGTH)));
       id = id / LENGTH;
     }
     return result.toString();
@@ -120,15 +125,26 @@ public class LinkController {
     return result;
   }
 
-  public RedirectView redirect(String shortCode) {
-    return new RedirectView(template.boundValueOps("i_"+shortCode).get());
+  @GetMapping("/{code}")
+  public RedirectView redirect(@PathVariable("code") String code) {
+    String url = template.boundValueOps("i_" + code).get();
+    if (!StringUtils.startsWithIgnoreCase(url, "http://") && !StringUtils
+        .startsWithIgnoreCase(url, "https://")) {
+      url = "http://" + url;
+    }
+    System.out.println("GET\t" + code + "\t:\t" + url);
+    return new RedirectView(url);
   }
 
-  @GetMapping("/get")
-  public String get(String url) {
-    Long c_index = template.boundValueOps("c_index").increment(1l);
-    String shortCode = baseUrl + getCode(c_index);
-    template.boundValueOps("i_"+shortCode).set(url);
-    return shortCode;
+  @PostMapping("/{url:.+}")
+  @ResponseBody
+  public String getCodeByUrl(@PathVariable("url") String url) {
+    BoundValueOperations<String, String> index = template.boundValueOps("c_index");
+    index.setIfAbsent(0 + "");
+    Long c_index = index.increment(1l);
+    String shortCode = getCode(c_index);
+    template.boundValueOps("i_" + shortCode).set(url);
+    System.out.println("POST\t" + shortCode + "\t:\t" + url);
+    return baseUrl + shortCode;
   }
 }
