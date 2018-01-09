@@ -115,16 +115,6 @@ public class LinkController {
     return result.toString();
   }
 
-  private int getCode(String code) {
-    int result = 0;
-    int counter = 0;
-    for (char ch : code.toCharArray()) {
-      result += CHAR_MAPPING.get(ch) * Math.pow(LENGTH, counter);
-      counter++;
-    }
-    return result;
-  }
-
   @GetMapping("/{code}")
   public RedirectView redirect(@PathVariable("code") String code) {
     String url = template.boundValueOps("i_" + code).get();
